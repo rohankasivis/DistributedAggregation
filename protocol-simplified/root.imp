@@ -1,0 +1,22 @@
+upon init 
+{
+  adjacent := {};
+  levels := [];
+  broadcast := false;
+}
+
+upon receive New(j) 
+{
+  send(j, Status(0, 0));
+  adjacent := adjacent cup { j };
+}
+
+upon receive Fail(j)
+{
+  adjacent := adjacent \ { j };
+}
+
+upon receive Status(j, lvo)
+{
+  skip;
+}
