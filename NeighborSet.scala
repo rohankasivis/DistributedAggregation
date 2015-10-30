@@ -22,8 +22,14 @@ object NeighborSet
     if(root == null)
       root = new Node(value, null, null)
     else{
-
+      addNeighborHelper(value, root)
     }
+  }
+
+  def addNeighborHelper(value: Double, curr:Node): Any = {
+    if(curr.left == null && value < curr.value)
+      curr.left = new Node(value, null, null)
+    else if(curr.right == null && value)
   }
 
   def removeNeighbor(value: Double) = {
