@@ -1,0 +1,45 @@
+upon init 
+{
+  adjacent := {};
+  levels := [];
+  broadcast := false;
+}
+
+upon receive New(j) 
+{
+  if level(adjacent, levels) =/= _|_ {
+    send(j, Status(i, level(adjacent, levels)));
+  }
+  adjacent := adjacent cup { j };
+}
+
+upon receive Fail(j)
+{
+  if level(adjacent, levels) =/= level(adjacent \ { j }, levels \ { j }) {
+    broadcast := true;
+  }
+  adjacent := adjacent \ { j };
+  levels := levels \ { j };
+}
+
+upon receive Status(j, _|_) 
+{
+  if level(adjacent , levels) =/= level(adjacent , levels \ { j }) {
+    broadcast := true;
+  }
+  levels := levels \ { j };
+}
+
+upon receive Status(j, lv) 
+{
+  if level(adjacent, levels) =/= level(adjacent, levels[j |-> lv]) {
+    broadcast := true;
+  }
+  levels := levels[j |-> lv];
+}
+
+upon broadcast = true
+{
+  send(adjacent, Status(i, level(adjacent, levels)));
+  broadcast := false;
+}
