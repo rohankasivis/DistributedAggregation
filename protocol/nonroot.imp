@@ -38,7 +38,7 @@ upon receive Aggregate(j, m) /\ received_mass(j) = m'
 upon receive Drop(j, m) /\ sent_mass(j) = m' 
 {
   aggregate_mass := aggregate_mass + m;
-  received_mass := sent_mass[j |-> m' - m];
+  sent_mass := sent_mass[j |-> m' - m];
 }
 
 upon receive Local(m) 
