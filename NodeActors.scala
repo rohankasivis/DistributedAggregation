@@ -16,8 +16,6 @@ abstract class NodeActors
 
   def remove_entry(nodeActors:NodeActors)
 
-  def update_entry(nodeActors:NodeActors)
-
   def level(nodeActors:NodeActors)
 
   def parent()

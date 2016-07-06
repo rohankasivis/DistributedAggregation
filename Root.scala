@@ -3,21 +3,19 @@ import akka.actor.Actor._
 
 class Root extends NodeActors
 {
-  private var levels:Array[Int] = new Array[Int](100)
-  private var sent_mass:Array[Int] = new Array[Int](100)
-  private var received_mass:Array[Int] = new Array[Int](100)
+  private var levels:Map[NodeActors, Int] = Map.empty
+  private var sent_mass:Map[NodeActors, Int] = Map.empty
+  private var received_mass:Map[NodeActors, Int] = Map.empty
   private var local_mass:Int = 0
   private var aggregate_mass:Int = 0
-  private var adjacent:Array[NodeActors] = new Array[NodeActors](100)
+  private var adjacent:Set[NodeActors] = Set.empty
   private var broadcast:Boolean = false
-  private var index:Int = 0
 
   def new_entry(nodeActors:NodeActors)
   {
-    adjacent(index) = nodeActors
-    sent_mass(index) = 0
-    received_mass(index) = 0
-    index = index + 1
+    adjacent += nodeActors
+    sent_mass = sent_mass + (nodeActors -> 0)
+    received_mass = received_mass + (nodeActors -> 0)
   }
 
   def remove_entry(nodeActors:NodeActors)
@@ -25,19 +23,14 @@ class Root extends NodeActors
 
   }
 
-  def update_entry(nodeActors:NodeActors)
-  {
-
-  }
-
   def level(nodeActors:NodeActors)
   {
-
+    // not implemented here
   }
 
   def parent()
   {
-
+    // not implemented here
   }
 
   def send(nodeActors:NodeActors, value:Int)
@@ -47,7 +40,7 @@ class Root extends NodeActors
 
   def broadcast(value:Int)
   {
-
+    // not implemented here
   }
 
   // helper function
@@ -78,10 +71,9 @@ class Root extends NodeActors
     }
 
     case Fail(arg1) => val result = {
-      val sent_index:Int = get_index(adjacent, arg1)
-      adjacent(sent_index) = null     // effectively removes element
-      val sent_val:Int = sent_mass(sent_index)
-      val received_val:Int = received_mass(sent_index)
+      val sent_val:Int = sent_mass(arg1)
+      val received_val:Int = received_mass(arg1)
+      remove_entry(arg1)
       aggregate_mass = aggregate_mass + sent_val - received_val
     }
 

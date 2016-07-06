@@ -24,11 +24,6 @@ class NonRoot extends NodeActors
 
   }
 
-  def update_entry(nodeActors:NodeActors)
-  {
-
-  }
-
   def level(nodeActors:NodeActors)
   {
 
