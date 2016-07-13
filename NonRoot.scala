@@ -30,13 +30,68 @@ class NonRoot extends NodeActors
     // remove the element corresponding to the nodeactor from level map
   }
 
+  // level simply returns the current level, which is the level of the parent + 1
   def level(nodeActors:Set[NodeActors], levels:Map[NodeActors, Int]): Int=
   {
-    0
+    // first make a call to parent and get the level, and then simply add one to it
+    val result: Map[NodeActors, Int] = parent(nodeActors, levels)
+    val keys: Set[NodeActors] = result.keySet
+    val the_first: NodeActors = first(keys)
+    val ret_level:Int = result.get(the_first) + 1
+    return ret_level
   }
 
-  def parent(nodeActors:Set[NodeActors], level:Map[NodeActors, Int]): NodeActors =
+  // this is the parent function which will return a mapping of the parent nodeactor to its level (only one element)
+  def parent(nodeActors:Set[NodeActors], levels:Map[NodeActors, Int]): Map[NodeActors, Int] =
   {
+    // base case - the size of the set is 1
+    // in this base case, we simply return a map of the individual actor mapped with its level
+    if(nodeActors.size == 1)
+    {
+      // return the only element in the set
+      for(curr <- nodeActors)
+      {
+        val temp:NodeActors = curr
+        val second:Option[Int] = levels.get(temp)
+        val the_int:Int = second.get
+        val the_res: Map[NodeActors, Int] = Map.empty
+        val third: Map[NodeActors, Int] = the_res + (temp -> the_int)
+        return third
+      }
+      null
+    }
+    else
+    {
+      val temp:NodeActors = first(nodeActors)
+      val temp_set:Set[NodeActors] = adjacent - temp
+      val result:Map[NodeActors, Int] = parent(temp_set, levels)
+      val the_set:Set[NodeActors] = result.keySet      // this set will contain only one nodeactor
+      val res:NodeActors = first(the_set)
+      val first_int: Option[Int] = result.get(res)
+      val first_cmp = first_int.get                    // the first to compare - this int is from the recursive call
+      val second_int: Option[Int] = levels.get(temp)
+      val second_cmp = second_int.get                  // the second to compare - this int is directly gotten from levels
+      if(first_cmp < second_cmp)
+      {
+        return result
+      }
+      else
+      {
+        // in this case, we create a new map with second compare and temp and return that
+        val the_res: Map[NodeActors, Int] = Map.empty
+        val final_ret: Map[NodeActors, Int] = the_res + (temp -> second_cmp)
+        return final_ret
+      }
+    }
+  }
+
+  // helper function that returns a random element from NodeActors
+  def first(nodeActors:Set[NodeActors]): NodeActors =
+  {
+    for(curr <- nodeActors)
+    {
+      return curr
+    }
     null
   }
 
@@ -92,7 +147,9 @@ class NonRoot extends NodeActors
   {
     if(aggregate_mass != 0)
     {
-      val res:NodeActors = parent(adjacent, levels)
+      val result:Map[NodeActors,Int] = parent(adjacent, levels)
+      val the_set:Set[NodeActors] = result.keySet      // this set will contain only one nodeactor
+      val res:NodeActors = first(the_set)
       send_agg(res, Aggregate(null, aggregate_mass))
       sent_mass.get(res).get + aggregate_mass
       aggregate_mass = 0
