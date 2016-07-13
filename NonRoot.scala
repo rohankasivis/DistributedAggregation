@@ -22,37 +22,40 @@ class NonRoot extends NodeActors
     adjacent += nodeActors
     sent_mass = sent_mass + (nodeActors -> 0)
     received_mass = received_mass + (nodeActors -> 0)
-    index = index + 1
-    levels += nodeActors -> index
   }
 
   def remove_entry(nodeActors:NodeActors)
   {
-    adjacent -= nodeActors
+    adjacent -= nodeActors        // remove an element from the nodeactors set
+    // remove the element corresponding to the nodeactor from level map
   }
 
-  def level(nodeActors:NodeActors): Int =
+  def level(nodeActors:Set[NodeActors], levels:Map[NodeActors, Int]): Int=
   {
-    levels.get(nodeActors).get
+    0
   }
 
-  def parent()
+  def parent(nodeActors:Set[NodeActors], level:Map[NodeActors, Int]): NodeActors =
   {
-
+    null
   }
 
   def send(nodeActors:NodeActors, value:Int)
   {
-    val act = system.actorOf(Props(nodeActors))
+    val act = system.actorOf(Props[NodeActors])
+    act ! value
+  }
+
+  def send(nodeActors:Set[NodeActors], value:Status)
+  {
+    val act = system.actorOf(Props[NodeActors])
     act ! value
   }
 
   def broadcast(value:Int)
   {
-    for (na <- adjacent)
-    {
-      send (na,value)
-    }
+    send(adjacent, Status(null, level(adjacent, levels)))
+    broadcast = false
   }
 
   // helper function
@@ -81,15 +84,38 @@ class NonRoot extends NodeActors
 
   }
 
+  def send_agg(arg1:NodeActors, adjacent:Aggregate) = {
+
+  }
+
+  def handle_aggregate() =
+  {
+    if(aggregate_mass != 0)
+    {
+      val res:NodeActors = parent(adjacent, levels)
+      send_agg(res, Aggregate(null, aggregate_mass))
+      sent_mass.get(res).get + aggregate_mass
+      aggregate_mass = 0
+    }
+  }
+
   def receive: Receive = {
     case New(arg1) => val result = {
-      send(arg1, Status(arg1,0))
+      val first:Int = level(adjacent, levels)
+      if(first != -1)     // then the level does exist
+        send(arg1, Status(arg1, first))
       new_entry(arg1)
     }
 
     case Fail(arg1) => val result = {
-      val sent_index:Int = get_index(adjacent.toArray, arg1)
+      val first:Int = level(adjacent, levels)
+      val temp:Set[NodeActors] = adjacent - arg1
+      val temp_lvl:Map[NodeActors, Int] = levels.filterKeys(_ != arg1)   // created two temp variables to do the level check condition
+      if(level(adjacent, levels) != level(temp, temp_lvl))
+        broadcast = true
+
       adjacent -= arg1
+      levels = levels.filterKeys(_ != arg1)
       // adjacent(sent_index) = null     // effectively removes element
       val sent_val:Option[Int] = sent_mass.get(arg1)
       val received_val:Option[Int] = received_mass.get(arg1)
@@ -105,8 +131,8 @@ class NonRoot extends NodeActors
     case Drop(arg1, arg2) => val result = {
       aggregate_mass = aggregate_mass + arg2
       //val index:Int = get_index(adjacent, arg1)
-      val sent_val:Int = sent_mass(arg1)
-
+      val index:Int = get_index(adjacent.toArray, arg1)
+      sent_mass.get(arg1).get - arg2
     }
 
     case Local(arg1) => val result = {
@@ -115,7 +141,10 @@ class NonRoot extends NodeActors
     }
 
     case Status(arg1, arg2) => val result = {
-      // dont do anything here
+      val temp_lvl:Map[NodeActors, Int] = levels.filterKeys(_ != arg1)
+      if(level(adjacent, levels) != level(adjacent, temp_lvl))
+        broadcast = true
+      levels = levels.filterKeys(_ != arg1)
     }
   }
 }

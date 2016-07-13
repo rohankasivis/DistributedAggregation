@@ -16,11 +16,11 @@ abstract class NodeActors
 
   def remove_entry(nodeActors:NodeActors)
 
-  def level(nodeActors:NodeActors)
+  def level(nodeActors:Set[NodeActors], level:Map[NodeActors, Int])
 
-  def parent()
+  def parent(nodeActors:Set[NodeActors], level:Map[NodeActors, Int])
 
-  def send(nodeActors:NodeActors, value:Int)
+  def send(nodeActors:NodeActors, value:Status)
 
   def broadcast(value:Int)
 }

@@ -25,20 +25,20 @@ class Root extends NodeActors
     adjacent -= nodeActors
   }
 
-  def level(nodeActors:NodeActors):Int=
+  def level(nodeActors:Set[NodeActors], levels:Map[NodeActors, Int]):Int=
   {
     // not implemented here
     0
   }
 
-  def parent()
+  def parent(nodeActors:Set[NodeActors], level:Map[NodeActors, Int])
   {
     // not implemented here
   }
 
-  def send(nodeActors:NodeActors, value:Int)
+  def send(nodeActors:NodeActors, value:Status)
   {
-    val act = system.actorOf(Props(nodeActors))
+    val act = system.actorOf(Props[NodeActors])
     act ! value
   }
 
@@ -70,7 +70,7 @@ class Root extends NodeActors
 
   def receive: Receive = {
     case New(arg1) => val result = {
-      send(arg1, 0)
+      send(arg1, Status(null, 0))
       new_entry(arg1)
     }
 
