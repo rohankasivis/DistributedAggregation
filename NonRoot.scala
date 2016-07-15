@@ -31,14 +31,15 @@ class NonRoot extends NodeActors
   }
 
   // level simply returns the current level, which is the level of the parent + 1
-  def level(nodeActors:Set[NodeActors], levels:Map[NodeActors, Int]): Int=
+  def level(nodeActors:Set[NodeActors], levels:Map[NodeActors, Int]): Option[Int]=
   {
     // first make a call to parent and get the level, and then simply add one to it
     val result: Map[NodeActors, Int] = parent(nodeActors, levels)
     val keys: Set[NodeActors] = result.keySet
     val the_first: NodeActors = first(keys)
-    val ret_level:Int = result.get(the_first) + 1
-    return ret_level
+    val ret_level:Int = result.get(the_first).get + 1
+    val ret:Option[Int] = Option.apply(ret_level)
+    return ret
   }
 
   // this is the parent function which will return a mapping of the parent nodeactor to its level (only one element)
@@ -95,52 +96,28 @@ class NonRoot extends NodeActors
     null
   }
 
-  def send(nodeActors:NodeActors, value:Int)
-  {
-    val act = system.actorOf(Props[NodeActors])
-    act ! value
-  }
-
   def send(nodeActors:Set[NodeActors], value:Status)
   {
-    val act = system.actorOf(Props[NodeActors])
-    act ! value
+    val act = system.actorOf(Props[NonRoot])
+    for(curr <- nodeActors)
+      act ! value
   }
 
   def broadcast(value:Int)
   {
-    send(adjacent, Status(null, level(adjacent, levels)))
+    send(adjacent, Status(this, level(adjacent, levels)))
     broadcast = false
-  }
-
-  // helper function
-  def get_index(values:Array[Int], value:Int):Int=
-  {
-    for(i <- 0 until values.length)
-    {
-      if(values(i) == value)
-        return i
-    }
-    return 0
-  }
-
-  def get_index(values:Array[NodeActors], value:NodeActors): Int =
-  {
-    for((i) <- 0 until values.length)
-    {
-      if(values(i) == value)
-        return i
-    }
-    return 0
   }
 
   def send(arg1: NodeActors, status: Status) =
   {
-
+    var send_node = system.actorOf(Props[NodeActors], "root")
+    send_node ! status
   }
 
   def send_agg(arg1:NodeActors, adjacent:Aggregate) = {
-
+    var send_node = system.actorOf(Props[NodeActors], "root")
+    send_node ! adjacent
   }
 
   def handle_aggregate() =
@@ -158,14 +135,14 @@ class NonRoot extends NodeActors
 
   def receive: Receive = {
     case New(arg1) => val result = {
-      val first:Int = level(adjacent, levels)
-      if(first != -1)     // then the level does exist
+      val first:Option[Int] = level(adjacent, levels)
+      if(first.get != -1)     // then the level does exist
         send(arg1, Status(arg1, first))
       new_entry(arg1)
     }
 
     case Fail(arg1) => val result = {
-      val first:Int = level(adjacent, levels)
+      val first:Int = level(adjacent, levels).get
       val temp:Set[NodeActors] = adjacent - arg1
       val temp_lvl:Map[NodeActors, Int] = levels.filterKeys(_ != arg1)   // created two temp variables to do the level check condition
       if(level(adjacent, levels) != level(temp, temp_lvl))
@@ -181,14 +158,11 @@ class NonRoot extends NodeActors
 
     case Aggregate(arg1, arg2) => val result = {
       aggregate_mass = aggregate_mass + arg2
-      val index:Int = get_index(adjacent.toArray, arg1)
       received_mass.get(arg1).get + arg2
     }
 
     case Drop(arg1, arg2) => val result = {
       aggregate_mass = aggregate_mass + arg2
-      //val index:Int = get_index(adjacent, arg1)
-      val index:Int = get_index(adjacent.toArray, arg1)
       sent_mass.get(arg1).get - arg2
     }
 

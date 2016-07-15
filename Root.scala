@@ -4,6 +4,7 @@ import akka.actor.{ActorSystem, Props}
 
 class Root extends NodeActors
 {
+  // these are all of the private variables that are used
   private var levels:Map[NodeActors, Int] = Map.empty
   private var sent_mass:Map[NodeActors, Int] = Map.empty
   private var received_mass:Map[NodeActors, Int] = Map.empty
@@ -13,6 +14,7 @@ class Root extends NodeActors
   private var broadcast:Boolean = false
   val system = ActorSystem("NodeActors")
 
+  // a new entry is added.. simply instantiate the private variables accordingly here
   def new_entry(nodeActors:NodeActors)
   {
     adjacent += nodeActors
@@ -25,21 +27,21 @@ class Root extends NodeActors
     adjacent -= nodeActors
   }
 
-  def level(nodeActors:Set[NodeActors], levels:Map[NodeActors, Int]):Int=
+  def level(nodeActors:Set[NodeActors], levels:Map[NodeActors, Int])
   {
-    // not implemented here
-    0
+    // not implemented here - no need to, as this is the root with default level 0
   }
 
   def parent(nodeActors:Set[NodeActors], level:Map[NodeActors, Int])
   {
-    // not implemented here
+    // not implemented here - no need to, as the root does not contain any parents
   }
 
   def send(nodeActors:NodeActors, value:Status)
   {
-    val act = system.actorOf(Props[NodeActors])
-    act ! value
+    // in this case, we do not have to check for option, as 0 will always be passed in
+    var send_node = system.actorOf(Props[NodeActors], "root")
+    send_node ! value
   }
 
   def broadcast(value:Int)
@@ -47,44 +49,24 @@ class Root extends NodeActors
     // not implemented here
   }
 
-  // helper function
-  def get_index(values:Array[Int], value:Int):Int=
-  {
-    for(i <- 0 until values.length)
-    {
-      if(values(i) == value)
-        return i
-    }
-    return 0
-  }
-
-  def get_index(values:Array[NodeActors], value:NodeActors):Int=
-  {
-    for((i) <- 0 until values.length)
-    {
-      if(values(i) == value)
-        return i
-    }
-    return 0
-  }
-
   def receive: Receive = {
     case New(arg1) => val result = {
-      send(arg1, Status(null, 0))
+      var send_int:Option[Int] = Option.apply(0)
+      send(arg1, Status(this, send_int))        // passing in a status of level 0 to the send function
       new_entry(arg1)
     }
 
     case Fail(arg1) => val result = {
-      val sent_val:Int = sent_mass(arg1)
-      val received_val:Int = received_mass(arg1)
       remove_entry(arg1)
+      val sent_val:Int = sent_mass.get(arg1).get
+      val received_val:Int = received_mass.get(arg1).get
       aggregate_mass = aggregate_mass + sent_val - received_val
     }
 
     case Aggregate(arg1, arg2) => val result = {
       aggregate_mass = aggregate_mass + arg2
-      val index:Int = get_index(adjacent.toArray, arg1)
-      received_mass.get(arg1).get + arg2
+      var temp:Int = received_mass.get(arg1).get + arg2
+      received_mass = received_mass + (arg1 -> temp)    // reassignment of received mass to modify index
     }
 
     case Local(arg1) => val result = {
