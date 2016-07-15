@@ -27,14 +27,17 @@ class Root extends NodeActors
     adjacent -= nodeActors
   }
 
-  def level(nodeActors:Set[NodeActors], levels:Map[NodeActors, Int])
+  def level(nodeActors:Set[NodeActors], levels:Map[NodeActors, Int]): Option[Int] =
   {
     // not implemented here - no need to, as this is the root with default level 0
+    val ret:Option[Int] = Option.apply(0)
+    return ret
   }
 
-  def parent(nodeActors:Set[NodeActors], level:Map[NodeActors, Int])
+  def parent(nodeActors:Set[NodeActors], level:Map[NodeActors, Int]):Map[NodeActors, Int] =
   {
     // not implemented here - no need to, as the root does not contain any parents
+    null
   }
 
   def send(nodeActors:NodeActors, value:Status)
