@@ -1,23 +1,23 @@
 import akka.actor._
 
 // these are all of the necessary case classes
-case class New(arg1:NodeActors)
-case class Fail(arg1:NodeActors)
-case class Aggregate(arg1:NodeActors, arg2:Int)
+case class New(arg1:ActorRef)
+case class Fail(arg1:ActorRef)
+case class Aggregate(arg1:ActorRef, arg2:Int)
 case class Local(arg1:Int)
-case class Status(arg1:NodeActors, arg2:Option[Int])
-case class Drop(arg1:NodeActors, arg2:Int)
+case class Status(arg1:ActorRef, arg2:Option[Int])
+case class Drop(arg1:ActorRef, arg2:Int)
 
 // this is the class which the root/non-root will extend
 abstract class NodeActors extends Actor
 {
-  def new_entry(nodeActors: NodeActors)
+  def new_entry(nodeActors: ActorRef)
 
-  def remove_entry(nodeActors:NodeActors)
+  def remove_entry(nodeActors:ActorRef)
 
-  def level(nodeActors:Set[NodeActors], level:Map[NodeActors, Int]): Option[Int]
+  def level(nodeActors:Set[ActorRef], level:Map[ActorRef, Int]): Option[Int]
 
-  def parent(nodeActors:Set[NodeActors], level:Map[NodeActors, Int]):Map[NodeActors, Int]
+  def parent(nodeActors:Set[ActorRef], level:Map[ActorRef, Int]):Map[ActorRef, Int]
 
-  def broadcast(value:Int)
+  def broadcast_var()
 }

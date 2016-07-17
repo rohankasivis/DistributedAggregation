@@ -1,62 +1,64 @@
-import akka.actor
-import akka.actor.Actor._
-import akka.actor.{ActorSystem, Props}
+import akka.actor.ActorRef
 
+//object Root {}
 class Root extends NodeActors
 {
   // these are all of the private variables that are used
-  private var levels:Map[NodeActors, Int] = Map.empty
-  private var sent_mass:Map[NodeActors, Int] = Map.empty
-  private var received_mass:Map[NodeActors, Int] = Map.empty
+  private var levels:Map[ActorRef, Int] = Map.empty
+  private var sent_mass:Map[ActorRef, Int] = Map.empty
+  private var received_mass:Map[ActorRef, Int] = Map.empty
   private var local_mass:Int = 0
   private var aggregate_mass:Int = 0
-  private var adjacent:Set[NodeActors] = Set.empty
+  private var adjacent:Set[ActorRef] = Set.empty
   private var broadcast:Boolean = false
-  val system = ActorSystem("NodeActors")
 
   // a new entry is added.. simply instantiate the private variables accordingly here
-  def new_entry(nodeActors:NodeActors)
+  def new_entry(nodeActors:ActorRef)
   {
     adjacent += nodeActors
     sent_mass = sent_mass + (nodeActors -> 0)
     received_mass = received_mass + (nodeActors -> 0)
+    levels += (nodeActors -> 1)
   }
 
-  def remove_entry(nodeActors:NodeActors)
+  def remove_entry(nodeActors:ActorRef)
   {
     adjacent -= nodeActors
   }
 
-  def level(nodeActors:Set[NodeActors], levels:Map[NodeActors, Int]): Option[Int] =
+  def level(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Option[Int] =
   {
     // not implemented here - no need to, as this is the root with default level 0
-    val ret:Option[Int] = Option.apply(0)
+    val ret:Option[Int] = Some(0)
     return ret
   }
 
-  def parent(nodeActors:Set[NodeActors], level:Map[NodeActors, Int]):Map[NodeActors, Int] =
+  def parent(nodeActors:Set[ActorRef], level:Map[ActorRef, Int]):Map[ActorRef, Int] =
   {
     // not implemented here - no need to, as the root does not contain any parents
     null
   }
 
-  def send(nodeActors:NodeActors, value:Status)
+  def send(nodeActors:ActorRef, value:Status)
   {
     // in this case, we do not have to check for option, as 0 will always be passed in
-    var send_node = system.actorOf(Props[NodeActors], "root")
-    send_node ! value
+
+    nodeActors ! value
   }
 
-  def broadcast(value:Int)
+  def broadcast_var()
   {
     // not implemented here
   }
 
   def receive: Receive = {
     case New(arg1) => val result = {
-      var send_int:Option[Int] = Option.apply(0)
-      send(arg1, Status(this, send_int))        // passing in a status of level 0 to the send function
+      System.out.println("Start Calling in Root Case New :"+arg1.toString())
+      var send_int:Option[Int] = Some(0)
+      val actorref = self
+      send(arg1, Status(actorref, send_int))        // passing in a status of level 0 to the send function
       new_entry(arg1)
+      System.out.println("Start Calling in Root Case New :"+arg1.toString())
     }
 
     case Fail(arg1) => val result = {
