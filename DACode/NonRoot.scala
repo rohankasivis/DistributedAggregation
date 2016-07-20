@@ -34,17 +34,17 @@ class NonRoot extends NodeActors
     // if the levels size is o return -1
     if (levels.size < 1) return Option(-1)
     // first make a call to parent and get the level, and then simply add one to it
-    val result: Map[ActorRef, Int] = parent(nodeActors, levels)
+    val result: Map[ActorRef, Option[Int]] = parent(nodeActors, levels)
     val keys: Set[ActorRef] = result.keySet
     val the_first: ActorRef = first(keys)
-    val ret_level:Int = result.get(the_first).get + 1
-    val ret:Option[Int] = Option.apply(ret_level)
+    val ret_level:Int = result.get(the_first).get.get + 1
+    val ret:Option[Int] = Some(ret_level)
     System.out.println("Returning level value from level function :"+ret)
     ret
   }
 
   // this is the parent function which will return a mapping of the parent nodeactor to its level (only one element)
-  def parent(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Map[ActorRef, Int] =
+  def parent(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Map[ActorRef, Option[Int]] =
   {
     // base case - the size of the set is 1
     // in this base case, we simply return a map of the individual actor mapped with its level
@@ -56,8 +56,8 @@ class NonRoot extends NodeActors
         val temp:ActorRef = curr
         val second:Option[Int] = levels.get(temp)
         val the_int:Int = second.get
-        val the_res: Map[ActorRef, Int] = Map.empty
-        val third: Map[ActorRef, Int] = the_res + (temp -> the_int)
+        val the_res: Map[ActorRef, Option[Int]] = Map.empty
+        val third: Map[ActorRef, Option[Int]] = the_res + (temp -> second)
         return third
       }
       null
@@ -66,27 +66,27 @@ class NonRoot extends NodeActors
     {
       val temp:ActorRef = first(nodeActors)
       val temp_set:Set[ActorRef] = adjacent - temp
-      val result:Map[ActorRef, Int] = parent(temp_set, levels)
+      val result:Map[ActorRef, Option[Int]] = parent(temp_set, levels)
       val the_set:Set[ActorRef] = result.keySet      // this set will contain only one nodeactor
     val res:ActorRef = first(the_set)
-      val first_int: Option[Int] = result.get(res)
-      val first_cmp = first_int.get                    // the first to compare - this int is from the recursive call
+      val first_int: Option[Option[Int]] = result.get(res)
+      val first_cmp = first_int.get.get                   // the first to compare - this int is from the recursive call
     val second_int: Option[Int] = levels.get(temp) match
       {
         case Some(s) => Option(s)
         case None => Option(-1)
       }
 
-      val second_cmp = second_int.get                  // the second to compare - this int is directly gotten from levels
-      if(first_cmp < second_cmp)
+      val second_cmp = second_int                  // the second to compare - this int is directly gotten from levels
+      if(first_cmp < second_cmp.get)
       {
         result
       }
       else
       {
         // in this case, we create a new map with second compare and temp and return that
-        val the_res: Map[ActorRef, Int] = Map.empty
-        val final_ret: Map[ActorRef, Int] = the_res + (temp -> second_cmp)
+        val the_res: Map[ActorRef, Option[Int]] = Map.empty
+        val final_ret: Map[ActorRef, Option[Int]] = the_res + (temp -> second_cmp)
         final_ret
       }
     }
@@ -109,9 +109,10 @@ class NonRoot extends NodeActors
       curr ! value
   }
 
-  def broadcast(value:Int)
+  def broadcast_var()
   {
-    send(adjacent, Status(self, level(adjacent, levels)))
+    if(broadcast)
+      send(adjacent, Status(self, level(adjacent, levels)))
     broadcast = false
   }
 
@@ -128,12 +129,15 @@ class NonRoot extends NodeActors
   {
     if(aggregate_mass != 0)
     {
-      val result:Map[ActorRef,Int] = parent(adjacent, levels)
+      val result:Map[ActorRef,Option[Int]] = parent(adjacent, levels)
+      println(aggregate_mass)
       val the_set:Set[ActorRef] = result.keySet      // this set will contain only one nodeactor
     val res:ActorRef = first(the_set)
       send_agg(res, Aggregate(self, aggregate_mass))
-      sent_mass.get(res).get + aggregate_mass
+      val temp:Int = sent_mass.get(res).get + aggregate_mass
+      sent_mass = sent_mass + (res -> temp)
       aggregate_mass = 0
+      println(sent_mass)
     }
   }
 
@@ -177,6 +181,13 @@ class NonRoot extends NodeActors
       aggregate_mass = aggregate_mass + arg1 - local_mass
       local_mass = arg1
     }
+    case SendAggregate() => {
+      handle_aggregate()
+    }
+
+    case sendBroadcast() => {
+      broadcast_var()
+    }
 
     case Status(arg1, arg2) => val result = {
       // check the adjacent contains the passed in arg1 if not
@@ -194,6 +205,4 @@ class NonRoot extends NodeActors
       System.out.println("Start Calling in NonRoot Case Status :"+arg1.toString())
     }
   }
-
-  override def broadcast_var(): Unit = ???
 }

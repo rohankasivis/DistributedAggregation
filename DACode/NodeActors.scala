@@ -7,9 +7,11 @@ case class Aggregate(arg1:ActorRef, arg2:Int)
 case class Local(arg1:Int)
 case class Status(arg1:ActorRef, arg2:Option[Int])
 case class Drop(arg1:ActorRef, arg2:Int)
+case class SendAggregate()
+case class sendBroadcast()
 
 // this is the class which the root/non-root will extend
-abstract class NodeActors extends Actor
+abstract class  NodeActors extends Actor
 {
   def new_entry(nodeActors: ActorRef)
 
