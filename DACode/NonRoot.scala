@@ -34,9 +34,9 @@ class NonRoot extends NodeActors
     // if the levels size is o return -1
     if (levels.size < 1) return Option(-1)
     // first make a call to parent and get the level, and then simply add one to it
-    val result: Map[ActorRef, Option[Int]] = parent(nodeActors, levels)
-    val keys: Set[ActorRef] = result.keySet
-    val the_first: ActorRef = first(keys)
+    val result: Map[Option[ActorRef], Option[Int]] = parent(nodeActors, levels)
+    val keys: Set[Option[ActorRef]] = result.keySet
+    val the_first: Option[ActorRef] = first(keys)
     val ret_level:Int = result.get(the_first).get.get + 1
     val ret:Option[Int] = Some(ret_level)
     System.out.println("Returning level value from level function :"+ret)
@@ -44,7 +44,7 @@ class NonRoot extends NodeActors
   }
 
   // this is the parent function which will return a mapping of the parent nodeactor to its level (only one element)
-  def parent(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Map[ActorRef, Option[Int]] =
+  def parent(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Map[Option[ActorRef], Option[Int]] =
   {
     // base case - the size of the set is 1
     // in this base case, we simply return a map of the individual actor mapped with its level
@@ -53,11 +53,11 @@ class NonRoot extends NodeActors
       // return the only element in the set
       for(curr <- nodeActors)
       {
-        val temp:ActorRef = curr
-        val second:Option[Int] = levels.get(temp)
+        val temp:Option[ActorRef] = Some(curr)
+        val second:Option[Int] = levels.get(temp.get)
         val the_int:Int = second.get
-        val the_res: Map[ActorRef, Option[Int]] = Map.empty
-        val third: Map[ActorRef, Option[Int]] = the_res + (temp -> second)
+        val the_res: Map[Option[ActorRef], Option[Int]] = Map.empty
+        val third: Map[Option[ActorRef], Option[Int]] = the_res + (temp -> second)
         return third
       }
       null
@@ -65,10 +65,11 @@ class NonRoot extends NodeActors
     else
     {
       val temp:ActorRef = first(nodeActors)
+      val temp_in:Option[ActorRef] = Some(temp)
       val temp_set:Set[ActorRef] = adjacent - temp
-      val result:Map[ActorRef, Option[Int]] = parent(temp_set, levels)
-      val the_set:Set[ActorRef] = result.keySet      // this set will contain only one nodeactor
-    val res:ActorRef = first(the_set)
+      val result:Map[Option[ActorRef], Option[Int]] = parent(temp_set, levels)
+      val the_set:Set[Option[ActorRef]] = result.keySet      // this set will contain only one nodeactor
+    val res:Option[ActorRef] = first(the_set)
       val first_int: Option[Option[Int]] = result.get(res)
       val first_cmp = first_int.get.get                   // the first to compare - this int is from the recursive call
     val second_int: Option[Int] = levels.get(temp) match
@@ -85,15 +86,24 @@ class NonRoot extends NodeActors
       else
       {
         // in this case, we create a new map with second compare and temp and return that
-        val the_res: Map[ActorRef, Option[Int]] = Map.empty
-        val final_ret: Map[ActorRef, Option[Int]] = the_res + (temp -> second_cmp)
+        val the_res: Map[Option[ActorRef], Option[Int]] = Map.empty
+        val final_ret: Map[Option[ActorRef], Option[Int]] = the_res + (temp_in -> second_cmp)
         final_ret
       }
     }
   }
 
-  // helper function that returns a random element from NodeActors
   def first(nodeActors:Set[ActorRef]): ActorRef =
+  {
+    for(curr <- nodeActors)
+    {
+      return curr
+    }
+    null
+  }
+
+  // helper function that returns a random element from NodeActors
+  def first(nodeActors:Set[Option[ActorRef]]): Option[ActorRef] =
   {
     for(curr <- nodeActors)
     {
@@ -129,13 +139,13 @@ class NonRoot extends NodeActors
   {
     if(aggregate_mass != 0)
     {
-      val result:Map[ActorRef,Option[Int]] = parent(adjacent, levels)
+      val result:Map[Option[ActorRef],Option[Int]] = parent(adjacent, levels)
       println(aggregate_mass)
-      val the_set:Set[ActorRef] = result.keySet      // this set will contain only one nodeactor
-    val res:ActorRef = first(the_set)
-      send_agg(res, Aggregate(self, aggregate_mass))
-      val temp:Int = sent_mass.get(res).get + aggregate_mass
-      sent_mass = sent_mass + (res -> temp)
+      val the_set:Set[Option[ActorRef]] = result.keySet      // this set will contain only one nodeactor
+    val res:Option[ActorRef] = first(the_set)
+      send_agg(res.get, Aggregate(self, aggregate_mass))
+      val temp:Int = sent_mass.get(res.get).get + aggregate_mass
+      sent_mass = sent_mass + (res.get -> temp)
       aggregate_mass = 0
       println(sent_mass)
     }
