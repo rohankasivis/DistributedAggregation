@@ -19,7 +19,7 @@ abstract class  NodeActors extends Actor
 
   def level(nodeActors:Set[ActorRef], level:Map[ActorRef, Int]): Option[Int]
 
-  def parent(nodeActors:Set[ActorRef], level:Map[ActorRef, Int]):Map[ActorRef, Int]
+  def parent(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Option[ActorRef]
 
   def broadcast_var()
 }

@@ -28,67 +28,60 @@ class NonRoot extends NodeActors
     // remove the element corresponding to the nodeactor from level map
   }
 
-  // level simply returns the current level, which is the level of the parent + 1
-  def level(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Option[Int]=
+  def parent(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Option[ActorRef] =
   {
-    // if the levels size is o return -1
-    if (levels.size < 1) return Option(-1)
-    // first make a call to parent and get the level, and then simply add one to it
-    val result: Map[Option[ActorRef], Option[Int]] = parent(nodeActors, levels)
-    val keys: Set[Option[ActorRef]] = result.keySet
-    val the_first: Option[ActorRef] = first(keys)
-    val ret_level:Int = result.get(the_first).get.get + 1
-    val ret:Option[Int] = Some(ret_level)
-    System.out.println("Returning level value from level function :"+ret)
-    ret
+    val temp:Option[Tuple2[ActorRef, Int]] = par(nodeActors, levels)
+    if(temp.isEmpty)
+      return None
+    val ret:Tuple2[ActorRef, Int] = temp.get
+    val ret_string:Option[ActorRef] = Some(ret._1)
+    ret_string
   }
 
-  // this is the parent function which will return a mapping of the parent nodeactor to its level (only one element)
-  def parent(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Map[Option[ActorRef], Option[Int]] =
+  def level(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Option[Int] =
   {
-    // base case - the size of the set is 1
-    // in this base case, we simply return a map of the individual actor mapped with its level
-    if(nodeActors.size == 1)
+    val temp:Option[Tuple2[ActorRef, Int]] = par(nodeActors, levels)
+    if(temp.isEmpty)
+      return None
+    val ret:Tuple2[ActorRef, Int] = temp.get
+    val ret_int:Option[Int] = Some(ret._2)
+    ret_int
+  }
+
+  def par(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Option[Tuple2[ActorRef, Int]] =
+  {
+    if(nodeActors.isEmpty)  // base case
+      return None
+    val potential_parent:ActorRef = first(nodeActors)
+    val temp_strset:Set[ActorRef] = nodeActors - potential_parent
+    val recursive_return:Option[Tuple2[ActorRef, Int]] = par(temp_strset, levels)
+    if(recursive_return.isEmpty)
     {
-      // return the only element in the set
-      for(curr <- nodeActors)
+      // in this case, simply check the level of potentialparent in the levels map
+      if(levels.get(potential_parent).isEmpty)
+        None
+      else
       {
-        val temp:Option[ActorRef] = Some(curr)
-        val second:Option[Int] = levels.get(temp.get)
-        val the_int:Int = second.get
-        val the_res: Map[Option[ActorRef], Option[Int]] = Map.empty
-        val third: Map[Option[ActorRef], Option[Int]] = the_res + (temp -> second)
-        return third
+        val temp:Tuple2[ActorRef, Int] = new Tuple2(potential_parent, levels.get(potential_parent).get)
+        Some(temp)
       }
-      null
     }
     else
     {
-      val temp:ActorRef = first(nodeActors)
-      val temp_in:Option[ActorRef] = Some(temp)
-      val temp_set:Set[ActorRef] = adjacent - temp
-      val result:Map[Option[ActorRef], Option[Int]] = parent(temp_set, levels)
-      val the_set:Set[Option[ActorRef]] = result.keySet      // this set will contain only one nodeactor
-    val res:Option[ActorRef] = first(the_set)
-      val first_int: Option[Option[Int]] = result.get(res)
-      val first_cmp = first_int.get.get                   // the first to compare - this int is from the recursive call
-    val second_int: Option[Int] = levels.get(temp) match
-      {
-        case Some(s) => Option(s)
-        case None => Option(-1)
-      }
-
-      val second_cmp = second_int                  // the second to compare - this int is directly gotten from levels
-      if(first_cmp < second_cmp.get)
-      {
-        result
-      }
+      if(levels.get(potential_parent).isEmpty)
+        recursive_return
       else
       {
-        // in this case, we create a new map with second compare and temp and return that
-        val the_res: Map[Option[ActorRef], Option[Int]] = Map.empty
-        val final_ret: Map[Option[ActorRef], Option[Int]] = the_res + (temp_in -> second_cmp)
-        final_ret
+        // compare two levels and return the tuple with the lowest level
+        val level_one:Int = recursive_return.get._2
+        val level_two:Int = levels.get(potential_parent).get
+        if(level_one < level_two)
+          recursive_return
+        else
+        {
+          val the_tup:Tuple2[ActorRef, Int] = new Tuple2(potential_parent, level_two)
+          Some(the_tup)
+        }
       }
     }
   }
@@ -114,16 +107,18 @@ class NonRoot extends NodeActors
 
   def send(nodeActors:Set[ActorRef], value:Status)
   {
-    val act = system.actorOf(Props[NonRoot])
     for(curr <- nodeActors)
       curr ! value
+
   }
 
   def broadcast_var()
   {
     if(broadcast)
-      send(adjacent, Status(self, level(adjacent, levels)))
+      println("Entering broadcast_var")
+    send(adjacent, Status(self, level(adjacent, levels)))
     broadcast = false
+    println("Entering broadcast_var")
   }
 
   def send(arg1: ActorRef, status: Status) =
@@ -137,18 +132,23 @@ class NonRoot extends NodeActors
 
   def handle_aggregate() =
   {
-    if(aggregate_mass != 0)
+    /*if(aggregate_mass != 0)
+    {*/
+    println("Entering handle_aggregate")
+    val res:Option[ActorRef] = parent(adjacent, levels)
+    println(aggregate_mass)
+    send_agg(res.get, Aggregate(self, aggregate_mass))
+    val tmp1:Int = sent_mass.get(res.get) match
     {
-      val result:Map[Option[ActorRef],Option[Int]] = parent(adjacent, levels)
-      println(aggregate_mass)
-      val the_set:Set[Option[ActorRef]] = result.keySet      // this set will contain only one nodeactor
-    val res:Option[ActorRef] = first(the_set)
-      send_agg(res.get, Aggregate(self, aggregate_mass))
-      val temp:Int = sent_mass.get(res.get).get + aggregate_mass
-      sent_mass = sent_mass + (res.get -> temp)
-      aggregate_mass = 0
-      println(sent_mass)
+      case Some(s) => s
+      case None => 0
     }
+    val temp = tmp1+ aggregate_mass
+    sent_mass = sent_mass + (res.get -> temp)
+    aggregate_mass = 0
+    println(sent_mass)
+    println("Exiting handle_aggregate")
+    // }
   }
 
   def receive: Receive = {
@@ -179,12 +179,22 @@ class NonRoot extends NodeActors
 
     case Aggregate(arg1, arg2) => val result = {
       aggregate_mass = aggregate_mass + arg2
-      received_mass.get(arg1).get + arg2
+      val tmp_val=received_mass.get(arg1) match
+      {
+        case Some(s) => s
+        case None => 0
+      }
+      tmp_val + arg2
     }
 
     case Drop(arg1, arg2) => val result = {
       aggregate_mass = aggregate_mass + arg2
-      sent_mass.get(arg1).get - arg2
+      val tmp_val=sent_mass.get(arg1)match
+      {
+        case Some(s) => s
+        case None => 0
+      }
+      tmp_val - arg2
     }
 
     case Local(arg1) => val result = {
@@ -211,7 +221,7 @@ class NonRoot extends NodeActors
       val temp_lvl:Map[ActorRef, Int] = levels.filterKeys(_ != arg1)
       if(level(adjacent, levels) != level(adjacent, temp_lvl))
         broadcast = true
-      levels = levels.filterKeys(_ != arg1)
+      //  levels = levels.filterKeys(_ != arg1)
       System.out.println("Start Calling in NonRoot Case Status :"+arg1.toString())
     }
   }

@@ -33,7 +33,7 @@ class Root extends NodeActors
     return ret
   }
 
-  def parent(nodeActors:Set[ActorRef], level:Map[ActorRef, Int]):Map[ActorRef, Int] =
+  def parent(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Option[ActorRef] =
   {
     // not implemented here - no need to, as the root does not contain any parents
     null

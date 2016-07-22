@@ -13,7 +13,15 @@ object NodeActorTest extends App
 
   import system.dispatcher
   root_node ! New(node_one)
+
+  Thread.sleep(30000)
+  node_one ! SendAggregate()
+  Thread.sleep(30000)
+  node_one ! sendBroadcast()
+  Thread.sleep(30000)
   node_one  ! New(node_two)
+
+
   val cancellable =
     system.scheduler.schedule(
       0 milliseconds,
