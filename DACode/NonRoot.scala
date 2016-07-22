@@ -30,79 +30,52 @@ class NonRoot extends NodeActors
 
   def parent(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Option[ActorRef] =
   {
-    val temp:Option[Tuple2[ActorRef, Int]] = par(nodeActors, levels)
-    if(temp.isEmpty)
-      return None
-    val ret:Tuple2[ActorRef, Int] = temp.get
-    val ret_string:Option[ActorRef] = Some(ret._1)
-    ret_string
+    par(nodeActors, levels) match
+    {
+      case Some((parentRef, _)) => Some(parentRef)
+      case None => None
+    }
   }
 
   def level(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Option[Int] =
   {
-    val temp:Option[Tuple2[ActorRef, Int]] = par(nodeActors, levels)
-    if(temp.isEmpty)
-      return None
-    val ret:Tuple2[ActorRef, Int] = temp.get
-    val ret_int:Option[Int] = Some(ret._2)
-    ret_int
+    par(nodeActors, levels) match
+    {
+      case Some((_, parentLevel)) => Some(parentLevel + 1)
+      case None => None
+    }
   }
 
   def par(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Option[Tuple2[ActorRef, Int]] =
   {
-    if(nodeActors.isEmpty)  // base case
+    if (nodeActors.isEmpty)
       return None
-    val potential_parent:ActorRef = first(nodeActors)
-    val temp_strset:Set[ActorRef] = nodeActors - potential_parent
-    val recursive_return:Option[Tuple2[ActorRef, Int]] = par(temp_strset, levels)
-    if(recursive_return.isEmpty)
+
+    val currRef: ActorRef = nodeActors.head
+
+    par(nodeActors.tail, levels) match
     {
-      // in this case, simply check the level of potentialparent in the levels map
-      if(levels.get(potential_parent).isEmpty)
-        None
-      else
-      {
-        val temp:Tuple2[ActorRef, Int] = new Tuple2(potential_parent, levels.get(potential_parent).get)
-        Some(temp)
-      }
-    }
-    else
-    {
-      if(levels.get(potential_parent).isEmpty)
-        recursive_return
-      else
-      {
-        // compare two levels and return the tuple with the lowest level
-        val level_one:Int = recursive_return.get._2
-        val level_two:Int = levels.get(potential_parent).get
-        if(level_one < level_two)
-          recursive_return
-        else
+      case Some((parRef, parLevel)) =>
+        levels.get(currRef) match
         {
-          val the_tup:Tuple2[ActorRef, Int] = new Tuple2(potential_parent, level_two)
-          Some(the_tup)
+          case Some(currLevel) =>
+            if (currLevel < parLevel)
+              Some((currRef, currLevel))
+            else
+              Some((parRef, parLevel))
+          case None =>
+            Some((parRef, parLevel))
         }
-      }
+      case None =>
+        levels.get(currRef) match
+        {
+          case Some(currLevel) =>
+            Some((currRef, currLevel))
+          case None =>
+            None
+        }
     }
-  }
 
-  def first(nodeActors:Set[ActorRef]): ActorRef =
-  {
-    for(curr <- nodeActors)
-    {
-      return curr
-    }
-    null
-  }
-
-  // helper function that returns a random element from NodeActors
-  def first(nodeActors:Set[Option[ActorRef]]): Option[ActorRef] =
-  {
-    for(curr <- nodeActors)
-    {
-      return curr
-    }
-    null
   }
 
   def send(nodeActors:Set[ActorRef], value:Status)
