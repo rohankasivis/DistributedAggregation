@@ -1,4 +1,4 @@
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem}
 
 class NonRoot extends NodeActors
 {
@@ -107,9 +107,10 @@ class NonRoot extends NodeActors
   {
     /*if(aggregate_mass != 0)
     {*/
-    println("Entering handle_aggregate")
+
     val res:Option[ActorRef] = parent(adjacent, levels)
-    println(aggregate_mass)
+    println("Self :"+self.toString() +"levels size :"+levels.size+" adjacent size:"+adjacent.size)
+    println(self.toString()+" sending Aggregate("+aggregate_mass+") to "+res.get.toString())
     send_agg(res.get, Aggregate(self, aggregate_mass))
     val tmp1:Int = sent_mass.get(res.get) match
     {
@@ -119,17 +120,23 @@ class NonRoot extends NodeActors
     val temp = tmp1+ aggregate_mass
     sent_mass = sent_mass + (res.get -> temp)
     aggregate_mass = 0
-    println(sent_mass)
-    println("Exiting handle_aggregate")
+
     // }
   }
 
   def receive: Receive = {
     case New(arg1) => val result = {
       System.out.println("Start Calling in NonRoot Case New :"+arg1.toString())
-      val first:Option[Int] = level(adjacent, levels)
-      if(first.get != -1)     // then the level does exist
+      val first:Option[Int] = level(adjacent, levels) match
+      {
+        case Some(s) => Option(s)
+        case None => Option(-1)
+      }
+      if(first.get != -1) // then the level does exist
+      {
         send(arg1, Status(self, first))
+      }
+
       new_entry(arg1)
       System.out.println("Finish Calling in NonRoot Case New :"+arg1.toString())
     }
@@ -151,13 +158,17 @@ class NonRoot extends NodeActors
     }
 
     case Aggregate(arg1, arg2) => val result = {
+      println("received Aggregate("+arg2+") from "+arg1.toString())
       aggregate_mass = aggregate_mass + arg2
+      println("Aggregate Mass value = "+aggregate_mass);
+      //aggregate_mass = aggregate_mass + arg2
       val tmp_val=received_mass.get(arg1) match
       {
         case Some(s) => s
         case None => 0
       }
       tmp_val + arg2
+      handle_aggregate()
     }
 
     case Drop(arg1, arg2) => val result = {
@@ -171,7 +182,11 @@ class NonRoot extends NodeActors
     }
 
     case Local(arg1) => val result = {
+      println("Received Aggregate in "+self.toString()+" node  :"+arg1)
       aggregate_mass = aggregate_mass + arg1 - local_mass
+      println(" Aggregate in "+self.toString()+" node  :"+aggregate_mass)
+      handle_aggregate()
+
       local_mass = arg1
     }
     case SendAggregate() => {
@@ -195,7 +210,7 @@ class NonRoot extends NodeActors
       if(level(adjacent, levels) != level(adjacent, temp_lvl))
         broadcast = true
       //  levels = levels.filterKeys(_ != arg1)
-      System.out.println("Start Calling in NonRoot Case Status :"+arg1.toString())
+      System.out.println("Stop Calling in NonRoot Case Status :"+arg1.toString())
     }
   }
 }

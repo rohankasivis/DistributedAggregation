@@ -69,13 +69,17 @@ class Root extends NodeActors
     }
 
     case Aggregate(arg1, arg2) => val result = {
+      println("received Aggregate("+arg2+") from "+arg1.toString())
       aggregate_mass = aggregate_mass + arg2
+      println("Aggregate Mass value = "+aggregate_mass);
       var temp:Int = received_mass.get(arg1).get + arg2
       received_mass = received_mass + (arg1 -> temp)    // reassignment of received mass to modify index
     }
 
     case Local(arg1) => val result = {
+      println("Received Aggregate in root node :"+arg1)
       aggregate_mass = aggregate_mass + arg1 - local_mass
+      println(" Aggregate in root node :"+aggregate_mass)
       local_mass = arg1
     }
 

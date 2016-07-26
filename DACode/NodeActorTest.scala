@@ -1,5 +1,4 @@
 import akka.actor.{ActorRef, ActorSystem, Props}
-import scala.concurrent.duration._
 
 object NodeActorTest extends App
 {
@@ -10,12 +9,30 @@ object NodeActorTest extends App
   val root_node = system.actorOf(Props[Root], "root_node")
   val node_one = system.actorOf(Props[NonRoot], "node_one")
   val node_two = system.actorOf(Props[NonRoot], "node_two")
+  val node_three = system.actorOf(Props[NonRoot], "node_three")
 
-  import system.dispatcher
   root_node ! New(node_one)
+  root_node ! New(node_two)
 
   Thread.sleep(30000)
-  node_one ! SendAggregate()
+  node_one ! New(root_node)
+  node_one ! New(node_three)
+
+  Thread.sleep(30000)
+  node_two ! New(root_node)
+  node_two ! New(node_three)
+
+  //  Thread.sleep(30000)
+  node_three ! New(node_one)
+  node_three ! New(node_two)
+
+
+
+  root_node ! Local(2)
+  node_one ! Local(5)
+  node_two ! Local(10)
+  node_three ! Local(7)
+  /*node_one ! SendAggregate()
   Thread.sleep(30000)
   node_one ! sendBroadcast()
   Thread.sleep(30000)
@@ -53,7 +70,7 @@ object NodeActorTest extends App
   cancellable.cancel()
   canc_two.cancel()
   broad_one.cancel()
-  broad_two.cancel()
+  broad_two.cancel()*/
   // remove node two
   system stop node_two
   neighbors.get(node_two) match {
