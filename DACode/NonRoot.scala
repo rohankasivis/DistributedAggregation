@@ -1,4 +1,8 @@
+import java.util.concurrent.TimeUnit
+
 import akka.actor.{ActorRef, ActorSystem}
+
+import scala.concurrent.duration.Duration
 
 class NonRoot extends NodeActors
 {
@@ -85,13 +89,16 @@ class NonRoot extends NodeActors
 
   }
 
+
   def broadcast_var()
   {
-    if(broadcast)
+    println("Value of broadcast : "+broadcast+" in ActorRef: "+self.toString())
+    if(broadcast) {
       println("Entering broadcast_var")
-    send(adjacent, Status(self, level(adjacent, levels)))
-    broadcast = false
-    println("Entering broadcast_var")
+      send(adjacent, Status(self, level(adjacent, levels)))
+      broadcast = false
+      println("Exiting broadcast_var")
+    }
   }
 
   def send(arg1: ActorRef, status: Status) =
@@ -111,7 +118,10 @@ class NonRoot extends NodeActors
     val res:Option[ActorRef] = parent(adjacent, levels)
     println("Self :"+self.toString() +"levels size :"+levels.size+" adjacent size:"+adjacent.size)
     println(self.toString()+" sending Aggregate("+aggregate_mass+") to "+res.get.toString())
-    send_agg(res.get, Aggregate(self, aggregate_mass))
+    import system.dispatcher
+    system.scheduler.scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS),
+      res.get, Aggregate(self, aggregate_mass))
+    // send_agg(res.get, Aggregate(self, aggregate_mass))
     val tmp1:Int = sent_mass.get(res.get) match
     {
       case Some(s) => s
@@ -143,6 +153,7 @@ class NonRoot extends NodeActors
 
     case Fail(arg1) => val result = {
       System.out.println("Inside Fail")
+      println("Fail message received from "+arg1.toString()+" to ActorRef :"+self.toString())
       val first:Int = level(adjacent, levels).get
       val temp:Set[ActorRef] = adjacent - arg1
       val temp_lvl:Map[ActorRef, Int] = levels.filterKeys(_ != arg1)   // created two temp variables to do the level check condition
@@ -155,6 +166,7 @@ class NonRoot extends NodeActors
       val sent_val:Option[Int] = sent_mass.get(arg1)
       val received_val:Option[Int] = received_mass.get(arg1)
       aggregate_mass = aggregate_mass + sent_val.get - received_val.get
+      System.out.println("Inside Fail")
     }
 
     case Aggregate(arg1, arg2) => val result = {
@@ -211,6 +223,16 @@ class NonRoot extends NodeActors
         broadcast = true
       //  levels = levels.filterKeys(_ != arg1)
       System.out.println("Stop Calling in NonRoot Case Status :"+arg1.toString())
+    }
+
+    case terminate() => {
+      println("Inside terminate before sending fail message")
+      //  import system.dispatcher
+      for(curr <- adjacent) {
+        curr ! Fail(self)
+      }
+      println("Inside terminate after sending fail message")
+      context.stop(self)
     }
   }
 }
