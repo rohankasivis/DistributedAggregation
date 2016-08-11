@@ -2,7 +2,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
 object NodeActorTest extends App
 {
@@ -35,6 +35,34 @@ object NodeActorTest extends App
   node_two ! Local(10)
   node_three ! Local(7)
 
+
+  Thread.sleep(30000)
+  import system.dispatcher
+  val cancellable =
+    system.scheduler.schedule(
+      0 milliseconds,
+      50 milliseconds,
+      node_one,
+      SendAggregate())
+  val canc_two =
+    system.scheduler.schedule(
+      0 milliseconds,
+      50 milliseconds,
+      node_two,
+      SendAggregate())
+  val broad_two =
+    system.scheduler.schedule(
+      0 milliseconds,
+      50 milliseconds,
+      node_three,
+      SendAggregate())
+  Thread.sleep(30000)
+  cancellable.cancel()
+  canc_two.cancel()
+//  broad_one.cancel()
+  broad_two.cancel()
+  // remove node two
+
   Thread.sleep(30000)
   node_one ! sendBroadcast()
   node_two ! sendBroadcast()
@@ -42,49 +70,6 @@ object NodeActorTest extends App
 
   Thread.sleep(30000)
   node_three ! terminate()
-
-
-  // Thread.sleep(60000)
-  /*node_one ! SendAggregate()
-  Thread.sleep(30000)
-  node_one ! sendBroadcast()
-  Thread.sleep(30000)
-  node_one  ! New(node_two)
-
-
-  val cancellable =
-    system.scheduler.schedule(
-      0 milliseconds,
-      5 seconds,
-      node_one,
-      SendAggregate())
-  val canc_two =
-    system.scheduler.schedule(
-      0 milliseconds,
-      5 seconds,
-      node_two,
-      SendAggregate())
-
-  val broad_one =
-    system.scheduler.schedule(
-      0 milliseconds,
-      5 seconds,
-      node_one,
-      sendBroadcast())
-  val broad_two =
-    system.scheduler.schedule(
-      0 milliseconds,
-      5 seconds,
-      node_two,
-      sendBroadcast())
-
-
-  Thread.sleep(30000)
-  cancellable.cancel()
-  canc_two.cancel()
-  broad_one.cancel()
-  broad_two.cancel()*/
-  // remove node two
 
   //  node_three ! terminate()
   system stop node_two

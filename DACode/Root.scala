@@ -1,6 +1,5 @@
 import akka.actor.ActorRef
 
-//object Root {}
 class Root extends NodeActors
 {
   // these are all of the private variables that are used
@@ -53,27 +52,40 @@ class Root extends NodeActors
 
   def receive: Receive = {
     case New(arg1) => val result = {
-      System.out.println("Start Calling in Root Case New :"+arg1.toString())
-      var send_int:Option[Int] = Some(0)
-      val actorref = self
-      send(arg1, Status(actorref, send_int))        // passing in a status of level 0 to the send function
-      new_entry(arg1)
-      System.out.println("Start Calling in Root Case New :"+arg1.toString())
+      arg1 match {
+        case null => None
+        case some =>
+          System.out.println ("Start Calling in Root Case New :" + arg1.toString () )
+          var send_int: Option[Int] = Some (0)
+          val actorref = self
+          send (arg1, Status (actorref, send_int) ) // passing in a status of level 0 to the send function
+          new_entry (arg1)
+          System.out.println ("Start Calling in Root Case New :" + arg1.toString () )
+      }
     }
 
     case Fail(arg1) => val result = {
-      remove_entry(arg1)
-      val sent_val:Int = sent_mass.get(arg1).get
-      val received_val:Int = received_mass.get(arg1).get
-      aggregate_mass = aggregate_mass + sent_val - received_val
+      arg1 match
+      {
+        case null => None
+        case some =>
+          remove_entry (arg1)
+          val sent_val: Int = sent_mass.get (arg1).get
+          val received_val: Int = received_mass.get (arg1).get
+          aggregate_mass = aggregate_mass + sent_val - received_val
+      }
     }
 
     case Aggregate(arg1, arg2) => val result = {
-      println("received Aggregate("+arg2+") from "+arg1.toString())
-      aggregate_mass = aggregate_mass + arg2
-      println("Aggregate Mass value = "+aggregate_mass);
-      var temp:Int = received_mass.get(arg1).get + arg2
-      received_mass = received_mass + (arg1 -> temp)    // reassignment of received mass to modify index
+      arg1 match {
+        case null => None
+        case some =>
+          println ("received Aggregate(" + arg2 + ") from " + arg1.toString () )
+          aggregate_mass = aggregate_mass + arg2
+          println ("Aggregate Mass value = " + aggregate_mass)
+          var temp: Int = received_mass.get (arg1).get + arg2
+          received_mass = received_mass + (arg1 -> temp) // reassignment of received mass to modify index
+      }
     }
 
     case Local(arg1) => val result = {
