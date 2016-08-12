@@ -60,8 +60,9 @@ class Root extends NodeActors
           val actorref = self
           send (arg1, Status (actorref, send_int) ) // passing in a status of level 0 to the send function
           new_entry (arg1)
-          System.out.println ("Start Calling in Root Case New :" + arg1.toString () )
+          System.out.println ("Stop Calling in Root Case New :" + arg1.toString () )
       }
+      sender ! true
     }
 
     case Fail(arg1) => val result = {

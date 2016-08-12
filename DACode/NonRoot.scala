@@ -80,6 +80,7 @@ class NonRoot extends NodeActors
         case true => None
       }
       case true => None
+
     }
   }
 
@@ -113,6 +114,10 @@ class NonRoot extends NodeActors
 
   def handle_aggregate() =
   {
+    if (adjacent.isEmpty  )
+      {
+        println("adjacent is empty in "+self.toString())
+      }
     val res:Option[ActorRef] = parent(adjacent, levels)
     res match {
       case Some(value) =>
@@ -145,6 +150,7 @@ class NonRoot extends NodeActors
           new_entry (arg1)
           System.out.println ("Finish Calling in NonRoot Case New :" + arg1.toString () )
       }
+      sender ! true
     }
 
     case Fail(arg1) => val result = {
@@ -228,6 +234,7 @@ class NonRoot extends NodeActors
         case null => None
         case some =>
         System.out.println ("Start Calling in NonRoot Case Status :" + arg1.toString () )
+          println(self.toString()+" adjacent size in status "+adjacent.size)
         if (! adjacent.contains (arg1) ) {
         adjacent += arg1
         }

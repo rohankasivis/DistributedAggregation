@@ -1,12 +1,19 @@
+/*
+* This is the base test class that makes sure that the basic aggregate/local/fail
+* case classes work properly in order to produce the correct result.
+* */
+
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.util.Timeout
+import akka.pattern.ask
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 object NodeActorTest extends App
 {
-
   var neighbors : Map[ActorRef, Set[ActorRef]] = Map.empty
   val system = ActorSystem("NeighborSetSystem")
 
@@ -15,28 +22,34 @@ object NodeActorTest extends App
   val node_two = system.actorOf(Props(new NonRoot()), name="node_two")
   val node_three = system.actorOf(Props(new NonRoot()), name="node_three")
 
-  root_node ! New(node_one)
-  root_node ! New(node_two)
+  implicit val timeout = Timeout(5 seconds)
+  val future_rootone = root_node ? New(node_one)
+  val result_rootone = Await.ready(future_rootone, timeout.duration)
 
-  Thread.sleep(30000)
-  node_one ! New(root_node)
-  node_one ! New(node_three)
+  val future_roottwo = root_node ? New(node_two)
+  val result_roottwo = Await.ready(future_roottwo, timeout.duration)
 
-  Thread.sleep(30000)
-  node_two ! New(root_node)
-  node_two ! New(node_three)
+  val future_oneroot = node_one ? New(root_node)
+  val result_oneroot = Await.ready(future_oneroot, timeout.duration)
+  val future_onethree = node_one ? New(node_three)
+  val result_onethree = Await.ready(future_onethree, timeout.duration)
 
-  //  Thread.sleep(30000)
-  node_three ! New(node_one)
-  node_three ! New(node_two)
+  val future_tworoot = node_two ? New(root_node)
+  val result_tworoot = Await.ready(future_tworoot, timeout.duration)
+  val future_twothree = node_two ? New(node_two)
+  val result_twothree = Await.ready(future_twothree, timeout.duration)
 
+  val future_threeone = node_three ? New(node_one)
+  val result_threeone = Await.ready(future_threeone, timeout.duration)
+  val future_threetwo = node_three ? New(node_two)
+  val result_threetwo = Await.ready(future_threetwo, timeout.duration)
+
+  // just check with four local statements and make sure the summation takes place correctly
   root_node ! Local(2)
   node_one ! Local(5)
   node_two ! Local(10)
   node_three ! Local(7)
 
-
-  Thread.sleep(30000)
   import system.dispatcher
   val cancellable =
     system.scheduler.schedule(
@@ -56,21 +69,20 @@ object NodeActorTest extends App
       50 milliseconds,
       node_three,
       SendAggregate())
-  Thread.sleep(30000)
+
   cancellable.cancel()
   canc_two.cancel()
 //  broad_one.cancel()
   broad_two.cancel()
   // remove node two
 
-  Thread.sleep(30000)
   node_one ! sendBroadcast()
   node_two ! sendBroadcast()
   node_three ! sendBroadcast()
 
-  Thread.sleep(30000)
-  node_three ! terminate()
+  //node_three ! terminate()
 
+  // over here, we go through all of the individual nodes and send the fail messages appropriately
   //  node_three ! terminate()
   system stop node_two
   neighbors.get(node_two) match {
