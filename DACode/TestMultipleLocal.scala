@@ -222,7 +222,7 @@ object TestMultipleLocal extends App
       1 second,
       node_ten,
       SendAggregate())
-  Thread.sleep(30000)
+
   cancellable.cancel()
   canc_two.cancel()
   //  broad_one.cancel()
