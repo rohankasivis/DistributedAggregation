@@ -25,7 +25,6 @@ object NodeActorTest extends App
   implicit val timeout = Timeout(5 seconds)
   val future_rootone = root_node ? New(node_one)
   val result_rootone = Await.ready(future_rootone, timeout.duration)
-
   val future_roottwo = root_node ? New(node_two)
   val result_roottwo = Await.ready(future_roottwo, timeout.duration)
 
@@ -54,25 +53,25 @@ object NodeActorTest extends App
   val cancellable =
     system.scheduler.schedule(
       0 milliseconds,
-      50 milliseconds,
+      1 second,
       node_one,
       SendAggregate())
   val canc_two =
     system.scheduler.schedule(
       0 milliseconds,
-      50 milliseconds,
+      1 second,
       node_two,
       SendAggregate())
   val broad_two =
     system.scheduler.schedule(
       0 milliseconds,
-      50 milliseconds,
+      1 second,
       node_three,
       SendAggregate())
 
   cancellable.cancel()
   canc_two.cancel()
-//  broad_one.cancel()
+  //  broad_one.cancel()
   broad_two.cancel()
   // remove node two
 
@@ -80,14 +79,33 @@ object NodeActorTest extends App
   node_two ! sendBroadcast()
   node_three ! sendBroadcast()
 
-  //node_three ! terminate()
+  // over here, set up the connection map
+  neighbors = neighbors + (node_one -> Set(root_node, node_three))
+  neighbors = neighbors + (node_two -> Set(root_node, node_two))
+  neighbors = neighbors + (node_three -> Set(node_one, node_two))
 
   // over here, we go through all of the individual nodes and send the fail messages appropriately
-  //  node_three ! terminate()
-  system stop node_two
-  neighbors.get(node_two) match {
-    case Some(s) => s.foreach { n => n ! Fail(node_two) }
+
+  Thread.sleep(10000)
+  neighbors.get(node_one) match {
+    case Some(s) => s.foreach { n => node_one ! Fail(n) }
     case None => ()
   }
+  //system stop node_one
+  neighbors = neighbors - node_one
+
+
+  neighbors.get(node_two) match {
+    case Some(s) => s.foreach { n => node_two ! Fail(n) }
+    case None => ()
+  }
+  //system stop node_two
   neighbors = neighbors - node_two
+
+  neighbors.get(node_three) match {
+    case Some(s) => s.foreach { n => node_three ! Fail(n) }
+    case None => ()
+  }
+  //system stop node_three
+  neighbors = neighbors - node_three
 }
