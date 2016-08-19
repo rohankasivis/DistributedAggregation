@@ -52,35 +52,32 @@ class NonRoot extends NodeActors
 
   def par(nodeActors:Set[ActorRef], levels:Map[ActorRef, Int]): Option[Tuple2[ActorRef, Int]] =
   {
-    nodeActors.isEmpty match
-    {
-      case false =>
-      levels.isEmpty match {
-        case false =>
-          val currRef: ActorRef = nodeActors.head
-          par (nodeActors.tail, levels) match {
-          case Some ((parRef, parLevel) ) =>
-          levels.get (currRef) match {
-          case Some (currLevel) =>
-          if (currLevel < parLevel)
-          Some ((currRef, currLevel) )
-          else
-          Some ((parRef, parLevel) )
-          case None =>
-          Some ((parRef, parLevel) )
-          }
-          case None =>
-          levels.get (currRef) match {
-          case Some (currLevel) =>
-          Some ((currRef, currLevel) )
-          case None =>
-          None
-           }
-           }
-        case true => None
-      }
-      case true => None
+    if (nodeActors.isEmpty)
+      return None
 
+    val currRef: ActorRef = nodeActors.head
+
+    par(nodeActors.tail, levels) match
+    {
+      case Some((parRef, parLevel)) =>
+        levels.get(currRef) match
+        {
+          case Some(currLevel) =>
+            if (currLevel < parLevel)
+              Some((currRef, currLevel))
+            else
+              Some((parRef, parLevel))
+          case None =>
+            Some((parRef, parLevel))
+        }
+      case None =>
+        levels.get(currRef) match
+        {
+          case Some(currLevel) =>
+            Some((currRef, currLevel))
+          case None =>
+            None
+        }
     }
   }
 
@@ -94,12 +91,11 @@ class NonRoot extends NodeActors
   def broadcast_var()
   {
     println("Value of broadcast : "+broadcast+" in ActorRef: "+self.toString())
-    broadcast match {
-      case true =>
-        println ("Entering broadcast_var")
-        send (adjacent, Status (self, level (adjacent, levels) ) )
-        broadcast = false
-        println ("Exiting broadcast_var")
+    if (broadcast) {
+      println ("Entering broadcast_var")
+      send (adjacent, Status (self, level (adjacent, levels) ) )
+      broadcast = false
+      println ("Exiting broadcast_var")
     }
   }
 
@@ -114,42 +110,33 @@ class NonRoot extends NodeActors
 
   def handle_aggregate() =
   {
-    if (adjacent.isEmpty  )
-      {
-        println("adjacent is empty in "+self.toString())
-      }
-    val res:Option[ActorRef] = parent(adjacent, levels)
-    res match {
-      case Some(value) =>
-        sent_mass.get(res.get) match {
-          case Some(s) =>
+    parent(adjacent, levels) match {
+      case None => ()
+      case Some(parent_ref) =>
+        sent_mass.get(parent_ref) match {
+          case None => ()
+          case Some(parent_mass) =>
             println ("Self :" + self.toString () + "levels size :" + levels.size + " adjacent size:" + adjacent.size)
-            println (self.toString () + " sending Aggregate(" + aggregate_mass + ") to " + res.get.toString () )
-            send_agg(res.get, Aggregate(self, aggregate_mass))
-            val tmp1: Int = sent_mass.get(res.get).get
-            val temp = tmp1 + aggregate_mass
-            sent_mass = sent_mass + (res.get -> temp)
+            println (self.toString () + " sending Aggregate(" + aggregate_mass + ") to " + parent_ref.toString () )
+            send_agg(parent_ref, Aggregate(self, aggregate_mass))
+            sent_mass = sent_mass + (parent_ref -> (parent_mass + aggregate_mass))
             aggregate_mass = 0
         }
     }
-    // }
   }
 
   def receive: Receive = {
     case New(arg1) => val result = {
-      arg1 match {
-        case null => None
-        case value =>
-          System.out.println ("Start Calling in NonRoot Case New :" + arg1.toString () )
-          val first: Option[Int] = level (adjacent, levels) match {
-            case Some (s) => Option (s)
-            case None => Option (- 1)
-          }
-          if (first.get != - 1) // then the level does exist
-            send (arg1, Status (self, first) )
-          new_entry (arg1)
-          System.out.println ("Finish Calling in NonRoot Case New :" + arg1.toString () )
+      System.out.println ("Start Calling in NonRoot Case New :" + arg1.toString () )
+
+      level (adjacent, levels) match {
+        case Some (lv) => send (arg1, Status (self, Some(lv)))
+        case None => ()
       }
+
+      new_entry (arg1)
+
+      System.out.println ("Finish Calling in NonRoot Case New :" + arg1.toString () )
       sender ! true
     }
 
