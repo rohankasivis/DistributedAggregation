@@ -15,12 +15,10 @@ class NonRoot extends NodeActors
   //private var adjacent:Array[NodeActors] = new Array[NodeActors](100)
   private var adjacent:Set[ActorRef] = Set.empty
   private var broadcast:Boolean = false
-  private var index:Int = 0
   val system = ActorSystem("NodeActors")
 
   def new_entry(nodeActors:ActorRef)
   {
-    // adjacent(index) = nodeActors
     adjacent += nodeActors
     sent_mass = sent_mass + (nodeActors -> 0)
     received_mass = received_mass + (nodeActors -> 0)
@@ -159,7 +157,6 @@ class NonRoot extends NodeActors
 
                   adjacent -= arg1
                   levels = levels.filterKeys (_!= arg1)
-                    // adjacent(sent_index) = null     // effectively removes element
                   val sent_val: Option[Int] = sent_mass.get (arg1)
                   val received_val: Option[Int] = received_mass.get (arg1)
                   aggregate_mass = aggregate_mass + sent_val.get - received_val.get
@@ -178,10 +175,10 @@ class NonRoot extends NodeActors
           println ("received Aggregate(" + arg2 + ") from " + arg1.toString () )
           aggregate_mass = aggregate_mass + arg2
           println ("Aggregate Mass value = " + aggregate_mass)
-            //aggregate_mass = aggregate_mass + arg2
+          //aggregate_mass = aggregate_mass + arg2
           val tmp_val = received_mass.get (arg1) match {
-          case Some (s) => s
-          case None => 0
+            case Some (s) => s
+            case None => 0
           }
           tmp_val + arg2
           handle_aggregate ()
@@ -202,7 +199,7 @@ class NonRoot extends NodeActors
       println("Received Aggregate in "+self.toString()+" node  :"+arg1)
       aggregate_mass = aggregate_mass + arg1 - local_mass
       println(" Aggregate in "+self.toString()+" node  :"+aggregate_mass)
-     // handle_aggregate()
+      // handle_aggregate()
 
       local_mass = arg1
     }
@@ -220,17 +217,17 @@ class NonRoot extends NodeActors
       arg1 match {
         case null => None
         case some =>
-        System.out.println ("Start Calling in NonRoot Case Status :" + arg1.toString () )
+          System.out.println ("Start Calling in NonRoot Case Status :" + arg1.toString () )
           println(self.toString()+" adjacent size in status "+adjacent.size)
-        if (! adjacent.contains (arg1) ) {
-        adjacent += arg1
-        }
-        levels += (arg1 -> arg2.get)
-        val temp_lvl: Map[ActorRef, Int] = levels.filterKeys (_!= arg1)
-        if (level (adjacent, levels) != level (adjacent, temp_lvl) )
-        broadcast = true
+          if (! adjacent.contains (arg1) ) {
+            adjacent += arg1
+          }
+          levels += (arg1 -> arg2.get)
+          val temp_lvl: Map[ActorRef, Int] = levels.filterKeys (_!= arg1)
+          if (level (adjacent, levels) != level (adjacent, temp_lvl) )
+            broadcast = true
           //  levels = levels.filterKeys(_ != arg1)
-        System.out.println ("Stop Calling in NonRoot Case Status :" + arg1.toString () )
+          System.out.println ("Stop Calling in NonRoot Case Status :" + arg1.toString () )
       }
     }
 
