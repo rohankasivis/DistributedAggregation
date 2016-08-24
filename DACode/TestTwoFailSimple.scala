@@ -60,7 +60,6 @@ object TestTwoFailSimple extends App
   //system stop node_three
   neighbors = neighbors - node_three
 
-  Thread.sleep(10000)
   neighbors.get(node_one) match {
     case Some(s) => s.foreach { n => node_one ! Fail(n) }
     case None => ()

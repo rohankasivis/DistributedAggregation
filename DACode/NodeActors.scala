@@ -11,7 +11,7 @@ case class SendAggregate()
 case class sendBroadcast()
 
 // this is the class which the root/non-root will extend
-abstract class  NodeActors extends Actor
+abstract class NodeActors extends Actor
 {
   protected var levels:Map[ActorRef, Int] = Map.empty
   protected var sent_mass:Map[ActorRef, Int] = Map.empty

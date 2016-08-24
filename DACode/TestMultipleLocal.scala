@@ -160,7 +160,6 @@ object TestMultipleLocal extends App
   node_nine ! Local(11)
   node_ten ! Local(39)
 
-  Thread.sleep(30000)
   import system.dispatcher
   val cancellable =
     system.scheduler.schedule(

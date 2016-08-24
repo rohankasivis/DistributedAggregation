@@ -3,14 +3,6 @@ import akka.actor.ActorRef
 class Root extends NodeActors
 {
   // these are all of the private variables that are used
-  private var levels:Map[ActorRef, Int] = Map.empty
-  private var sent_mass:Map[ActorRef, Int] = Map.empty
-  private var received_mass:Map[ActorRef, Int] = Map.empty
-  private var local_mass:Int = 0
-  private var aggregate_mass:Int = 0
-  private var adjacent:Set[ActorRef] = Set.empty
-  private var broadcast:Boolean = false
-
   // a new entry is added.. simply instantiate the private variables accordingly here
   def new_entry(nodeActors:ActorRef)
   {
