@@ -6,6 +6,10 @@ import scala.concurrent.duration.Duration
 
 class NonRoot extends NodeActors
 {
+  override def postStop() = {
+
+  }
+
   def new_entry(nodeActors:ActorRef)
   {
     adjacent += nodeActors
@@ -81,8 +85,8 @@ class NonRoot extends NodeActors
   def broadcast_var()
   {
     println("Value of broadcast : "+broadcast+" in ActorRef: "+self.toString())
-    broadcast match {
-      case true =>
+    if(broadcast)
+    {
         println ("Entering broadcast_var")
         send (adjacent, Status (self, level (adjacent, levels) ) )
         broadcast = false
@@ -113,7 +117,9 @@ class NonRoot extends NodeActors
             val temp = tmp1 + aggregate_mass
             sent_mass = sent_mass + (res.get -> temp)
             aggregate_mass = 0
+          case None => // do nothing
         }
+      case None => // do nothing
     }
   }
 
@@ -142,7 +148,7 @@ class NonRoot extends NodeActors
             case Some(s) =>
               System.out.println ("Inside Fail")
               println ("Fail message received from " + arg1.toString () + " to ActorRef :" + self.toString () )
-              val first: Int = level (adjacent, levels).get
+
               val temp: Set[ActorRef] = adjacent - arg1
               val temp_lvl: Map[ActorRef, Int] = levels.filterKeys (_!= arg1) // created two temp variables to do the level check condition
               if (level (adjacent, levels) != level (temp, temp_lvl) )

@@ -170,7 +170,8 @@ object TestFourFailComplex extends App
   node_ten ! Local(39)
 
   // test with four nodes failing here - two, three, seven, and nine
-  Thread.sleep(10000)
+  //Thread.sleep(10000)
+
   neighbors.get(node_two) match {
     case Some(s) => s.foreach { n => node_two ! Fail(n) }
     case None => ()

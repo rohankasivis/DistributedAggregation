@@ -52,7 +52,7 @@ object TestTwoFailSimple extends App
   node_three ! Local(7)
 
   // fail here - the sum should be 17 now
-  Thread.sleep(10000)
+  //Thread.sleep(10000)
   neighbors.get(node_three) match {
     case Some(s) => s.foreach { n => node_three ! Fail(n) }
     case None => ()
@@ -85,6 +85,5 @@ object TestTwoFailSimple extends App
   cancellable.cancel()
   canc_two.cancel()
 
-  node_one ! sendBroadcast()
   node_two ! sendBroadcast()
 }

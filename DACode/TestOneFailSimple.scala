@@ -53,7 +53,6 @@ object TestOneFailSimple extends App
   node_three ! Local(7)
 
   // fail here - the sum should be 17 now
-  Thread.sleep(10000)
   neighbors.get(node_three) match {
     case Some(s) => s.foreach { n => node_three ! Fail(n) }
     case None => ()

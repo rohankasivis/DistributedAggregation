@@ -85,8 +85,6 @@ object NodeActorTest extends App
   neighbors = neighbors + (node_three -> Set(node_one, node_two))
 
   // over here, we go through all of the individual nodes and send the fail messages appropriately
-
-  Thread.sleep(10000)
   neighbors.get(node_one) match {
     case Some(s) => s.foreach { n => node_one ! Fail(n) }
     case None => ()
